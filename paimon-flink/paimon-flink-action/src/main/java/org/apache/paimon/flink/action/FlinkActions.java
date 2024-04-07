@@ -18,6 +18,8 @@
 
 package org.apache.paimon.flink.action;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Optional;
 
 import static org.apache.paimon.flink.action.ActionFactory.printDefaultHelp;
@@ -33,6 +35,26 @@ public class FlinkActions {
         if (args.length < 1) {
             printDefaultHelp();
             System.exit(1);
+        }
+
+        boolean passwordIsBase64 = false;
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if ("password-is-base64=true".equals(arg)) {
+                passwordIsBase64 = true;
+            }
+        }
+
+        if (passwordIsBase64) {
+            for (int i = 0; i < args.length; i++) {
+                String arg = args[i];
+                if (arg.startsWith("password=")) {
+                    String base64Password = arg.substring("password=".length());
+                    byte[] decoded = Base64.getDecoder().decode(base64Password);
+                    String decodedPassword = new String(decoded, StandardCharsets.UTF_8);
+                    args[i] = "password=" + decodedPassword;
+                }
+            }
         }
 
         Optional<Action> action = ActionFactory.createAction(args);
